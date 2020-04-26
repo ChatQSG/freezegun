@@ -9,10 +9,20 @@ import pytest
 from freezegun import freeze_time
 from tests import utils
 
+
+SECONDS_PER_DAY = 60 * 60 * 24
+
 @utils.cpython_only
 def test_ticking_datetime():
     with freeze_time("Jan 14th, 2012", tick=True):
         time.sleep(0.001)  # Deal with potential clock resolution problems
+        assert datetime.datetime.now() > datetime.datetime(2012, 1, 14)
+
+
+@utils.cpython_only
+def test_ticking_datetime_speedup():
+    with freeze_time("Jan 13th, 2012", tick=True, speedup=1000 * SECONDS_PER_DAY):
+        time.sleep(0.0011)  # Deal with potential clock resolution problems
         assert datetime.datetime.now() > datetime.datetime(2012, 1, 14)
 
 
@@ -62,6 +72,22 @@ def test_ticking_time():
     with freeze_time("Jan 14th, 2012, 23:59:59", tick=True):
         time.sleep(0.001)  # Deal with potential clock resolution problems
         assert time.time() > 1326585599.0
+
+
+@utils.cpython_only
+def test_ticking_date_speedup():
+    with freeze_time("Jan 14th, 2012, 00:59:59.9999999", tick=True, speedup=100 * SECONDS_PER_DAY):
+        time.sleep(0.01)  # Deal with potential clock resolution problems
+        assert datetime.date.today() == datetime.date(2012, 1, 15)
+
+
+@utils.cpython_only
+def test_ticking_time_speedup():
+    with freeze_time("Jan 14th, 2012, 00:59:59", tick=True, speedup=1000 * SECONDS_PER_DAY):
+        start = time.time()
+        time.sleep(0.001)  # Deal with potential clock resolution problems
+        elapsed = time.time() - start
+        assert SECONDS_PER_DAY <= elapsed < 1.5 * SECONDS_PER_DAY
 
 
 @mock.patch('freezegun.api._is_cpython', False)
